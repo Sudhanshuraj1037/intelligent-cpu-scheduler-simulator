@@ -5,16 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Intelligent CPU Scheduler Simulator</title>
 
-  <!-- Google Font -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     body {
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont;
+      font-family: Inter, system-ui, -apple-system;
     }
     .glass {
       background: rgba(255, 255, 255, 0.04);
@@ -25,101 +22,136 @@
 
 <body class="min-h-screen bg-gradient-to-br from-[#071013] via-[#0b1720] to-[#071013] text-slate-100 p-6">
 
-  <div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto">
 
-    <!-- Header -->
-    <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h1 class="text-3xl font-extrabold">
-          Intelligent CPU Scheduler Simulator
-        </h1>
-        <p class="text-slate-400 text-sm mt-1">
-          FCFS · SJF · Round Robin · Priority Scheduling
-        </p>
-      </div>
+  <!-- Header -->
+  <header class="mb-8 flex flex-col md:flex-row justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-extrabold">Intelligent CPU Scheduler Simulator</h1>
+      <p class="text-slate-400 text-sm mt-1">FCFS · SJF · Round Robin · Priority</p>
+    </div>
+  </header>
 
-      <div class="text-sm text-slate-300">
-        Developed by <span class="font-semibold">Deepak – Abhishek – Sudhanshu</span>
-      </div>
-    </header>
+  <main class="grid lg:grid-cols-3 gap-6">
 
-    <!-- Main Layout -->
-    <main class="grid lg:grid-cols-3 gap-6">
+    <!-- Left Panel -->
+    <section class="lg:col-span-1 space-y-6">
 
-      <!-- Left Panel -->
-      <section class="lg:col-span-1 space-y-6">
+      <!-- Add Process -->
+      <div class="p-4 rounded-2xl glass border border-slate-700">
+        <h2 class="text-lg font-semibold mb-4">Add Process</h2>
 
-        <!-- Add Process Card -->
-        <div class="p-4 rounded-2xl glass border border-slate-700">
-          <h2 class="text-lg font-semibold mb-4">Add Process</h2>
+        <div class="space-y-3 text-sm">
+          <input id="pid" type="text" placeholder="Process ID (optional)"
+            class="w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700" />
 
-          <div class="space-y-3 text-sm">
-            <input type="text" placeholder="Process ID"
-              class="w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700 text-slate-200" />
+          <input id="arrival" type="number" placeholder="Arrival Time"
+            class="w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700" />
 
-            <input type="number" placeholder="Arrival Time"
-              class="w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700 text-slate-200" />
+          <input id="burst" type="number" placeholder="Burst Time"
+            class="w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700" />
 
-            <input type="number" placeholder="Burst Time"
-              class="w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700 text-slate-200" />
+          <input id="priority" type="number" placeholder="Priority"
+            class="w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700" />
+        </div>
 
-            <input type="number" placeholder="Priority"
-              class="w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700 text-slate-200" />
-          </div>
-
-          <button class="mt-4 w-full px-3 py-2 rounded-lg bg-cyan-400 text-slate-900 font-semibold">
+        <div class="flex gap-2 mt-4">
+          <button id="addProcessBtn"
+            class="flex-1 px-3 py-2 rounded-lg bg-cyan-400 text-slate-900 font-semibold">
             Add Process
           </button>
+          <button id="clearProcessBtn"
+            class="px-3 py-2 rounded-lg border border-slate-700">
+            Clear
+          </button>
         </div>
+      </div>
 
-        <!-- Algorithm Selection -->
-        <div class="p-4 rounded-2xl glass border border-slate-700">
-          <h2 class="text-lg font-semibold mb-3">Scheduling Algorithm</h2>
+    </section>
 
-          <div class="grid grid-cols-2 gap-2 text-sm">
-            <button class="px-3 py-2 rounded-md bg-slate-800">FCFS</button>
-            <button class="px-3 py-2 rounded-md bg-slate-800">SJF</button>
-            <button class="px-3 py-2 rounded-md bg-slate-800">Round Robin</button>
-            <button class="px-3 py-2 rounded-md bg-slate-800">Priority</button>
-          </div>
-        </div>
+    <!-- Right Panel -->
+    <section class="lg:col-span-2 space-y-6">
 
-      </section>
+      <!-- Process Table -->
+      <div class="p-4 rounded-2xl glass border border-slate-700">
+        <h2 class="text-lg font-semibold mb-3">Process List</h2>
 
-      <!-- Right Panel -->
-      <section class="lg:col-span-2 space-y-6">
+        <table class="w-full text-sm">
+          <thead class="text-slate-300 text-xs uppercase">
+            <tr>
+              <th class="px-3 py-2 text-left">PID</th>
+              <th class="px-3 py-2 text-left">Arrival</th>
+              <th class="px-3 py-2 text-left">Burst</th>
+              <th class="px-3 py-2 text-left">Priority</th>
+            </tr>
+          </thead>
+          <tbody id="processTableBody" class="divide-y divide-slate-700">
+          </tbody>
+        </table>
+      </div>
 
-        <!-- Process Table -->
-        <div class="p-4 rounded-2xl glass border border-slate-700">
-          <h2 class="text-lg font-semibold mb-3">Process List</h2>
+    </section>
 
-          <table class="w-full text-sm">
-            <thead class="text-slate-300 text-xs uppercase">
-              <tr>
-                <th class="px-3 py-2 text-left">PID</th>
-                <th class="px-3 py-2 text-left">Arrival</th>
-                <th class="px-3 py-2 text-left">Burst</th>
-                <th class="px-3 py-2 text-left">Priority</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Rows will be added later -->
-            </tbody>
-          </table>
-        </div>
+  </main>
 
-        <!-- Gantt Chart Placeholder -->
-        <div class="p-4 rounded-2xl glass border border-slate-700">
-          <h2 class="text-lg font-semibold mb-2">Gantt Chart</h2>
-          <div class="h-24 rounded-lg bg-[#07151a] border border-slate-800 flex items-center justify-center text-slate-500">
-            Gantt chart will be displayed here
-          </div>
-        </div>
+</div>
 
-      </section>
-    </main>
+<script>
+  let processes = [];
+  let autoPid = 1;
 
-  </div>
+  const pidInput = document.getElementById("pid");
+  const arrivalInput = document.getElementById("arrival");
+  const burstInput = document.getElementById("burst");
+  const priorityInput = document.getElementById("priority");
+  const addProcessBtn = document.getElementById("addProcessBtn");
+  const clearProcessBtn = document.getElementById("clearProcessBtn");
+  const processTableBody = document.getElementById("processTableBody");
+
+  function renderProcessTable() {
+    processTableBody.innerHTML = "";
+
+    processes.forEach(p => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="px-3 py-2">${p.pid}</td>
+        <td class="px-3 py-2">${p.arrival}</td>
+        <td class="px-3 py-2">${p.burst}</td>
+        <td class="px-3 py-2">${p.priority}</td>
+      `;
+      processTableBody.appendChild(tr);
+    });
+  }
+
+  addProcessBtn.addEventListener("click", () => {
+    const arrival = parseInt(arrivalInput.value);
+    const burst = parseInt(burstInput.value);
+    const priority = parseInt(priorityInput.value);
+
+    if (isNaN(arrival) || isNaN(burst) || isNaN(priority)) {
+      alert("Please enter valid process details");
+      return;
+    }
+
+    let pid = pidInput.value.trim();
+    if (!pid) pid = "P" + autoPid++;
+
+    processes.push({ pid, arrival, burst, priority });
+
+    pidInput.value = "";
+    arrivalInput.value = "";
+    burstInput.value = "";
+    priorityInput.value = "";
+
+    renderProcessTable();
+  });
+
+  clearProcessBtn.addEventListener("click", () => {
+    processes = [];
+    autoPid = 1;
+    renderProcessTable();
+  });
+</script>
 
 </body>
 </html>
