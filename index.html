@@ -67,6 +67,22 @@
         </div>
       </div>
 
+      <!-- Algorithm Selection -->
+      <div class="p-4 rounded-2xl glass border border-slate-700">
+        <h2 class="text-lg font-semibold mb-3">Scheduling Algorithm</h2>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button data-algo="fcfs" class="algo-btn px-3 py-2 rounded-md bg-slate-800">FCFS</button>
+          <button data-algo="sjf" class="algo-btn px-3 py-2 rounded-md bg-slate-800">SJF</button>
+          <button data-algo="rr" class="algo-btn px-3 py-2 rounded-md bg-slate-800">Round Robin</button>
+          <button data-algo="priority" class="algo-btn px-3 py-2 rounded-md bg-slate-800">Priority</button>
+        </div>
+
+        <p id="selectedAlgoLabel" class="text-xs text-slate-400 mt-3">
+          No algorithm selected
+        </p>
+      </div>
+
     </section>
 
     <!-- Right Panel -->
@@ -85,8 +101,7 @@
               <th class="px-3 py-2 text-left">Priority</th>
             </tr>
           </thead>
-          <tbody id="processTableBody" class="divide-y divide-slate-700">
-          </tbody>
+          <tbody id="processTableBody" class="divide-y divide-slate-700"></tbody>
         </table>
       </div>
 
@@ -99,6 +114,7 @@
 <script>
   let processes = [];
   let autoPid = 1;
+  let selectedAlgo = null;
 
   const pidInput = document.getElementById("pid");
   const arrivalInput = document.getElementById("arrival");
@@ -107,10 +123,11 @@
   const addProcessBtn = document.getElementById("addProcessBtn");
   const clearProcessBtn = document.getElementById("clearProcessBtn");
   const processTableBody = document.getElementById("processTableBody");
+  const algoButtons = document.querySelectorAll(".algo-btn");
+  const selectedAlgoLabel = document.getElementById("selectedAlgoLabel");
 
   function renderProcessTable() {
     processTableBody.innerHTML = "";
-
     processes.forEach(p => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -150,6 +167,27 @@
     processes = [];
     autoPid = 1;
     renderProcessTable();
+  });
+
+  algoButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      algoButtons.forEach(b => b.classList.remove("bg-cyan-500","text-slate-900"));
+      algoButtons.forEach(b => b.classList.add("bg-slate-800","text-slate-100"));
+
+      btn.classList.remove("bg-slate-800","text-slate-100");
+      btn.classList.add("bg-cyan-500","text-slate-900");
+
+      selectedAlgo = btn.getAttribute("data-algo");
+
+      const labelMap = {
+        fcfs: "FCFS selected",
+        sjf: "SJF selected",
+        rr: "Round Robin selected",
+        priority: "Priority selected"
+      };
+
+      selectedAlgoLabel.textContent = labelMap[selectedAlgo];
+    });
   });
 </script>
 
