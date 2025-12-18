@@ -24,12 +24,9 @@
 
 <div class="max-w-7xl mx-auto">
 
-  <!-- Header -->
-  <header class="mb-8 flex flex-col md:flex-row justify-between gap-4">
-    <div>
-      <h1 class="text-3xl font-extrabold">Intelligent CPU Scheduler Simulator</h1>
-      <p class="text-slate-400 text-sm mt-1">FCFS · SJF · Round Robin · Priority</p>
-    </div>
+  <header class="mb-8">
+    <h1 class="text-3xl font-extrabold">Intelligent CPU Scheduler Simulator</h1>
+    <p class="text-slate-400 text-sm mt-1">FCFS · SJF · Round Robin · Priority</p>
   </header>
 
   <main class="grid lg:grid-cols-3 gap-6">
@@ -37,7 +34,6 @@
     <!-- Left Panel -->
     <section class="lg:col-span-1 space-y-6">
 
-      <!-- Add Process -->
       <div class="p-4 rounded-2xl glass border border-slate-700">
         <h2 class="text-lg font-semibold mb-4">Add Process</h2>
 
@@ -74,13 +70,16 @@
         <div class="grid grid-cols-2 gap-2">
           <button data-algo="fcfs" class="algo-btn px-3 py-2 rounded-md bg-slate-800">FCFS</button>
           <button data-algo="sjf" class="algo-btn px-3 py-2 rounded-md bg-slate-800">SJF</button>
-          <button data-algo="rr" class="algo-btn px-3 py-2 rounded-md bg-slate-800">Round Robin</button>
-          <button data-algo="priority" class="algo-btn px-3 py-2 rounded-md bg-slate-800">Priority</button>
         </div>
 
         <p id="selectedAlgoLabel" class="text-xs text-slate-400 mt-3">
           No algorithm selected
         </p>
+
+        <button id="runBtn"
+          class="mt-4 w-full px-3 py-2 rounded-lg bg-amber-400 text-slate-900 font-semibold">
+          Run Scheduler
+        </button>
       </div>
 
     </section>
@@ -88,7 +87,6 @@
     <!-- Right Panel -->
     <section class="lg:col-span-2 space-y-6">
 
-      <!-- Process Table -->
       <div class="p-4 rounded-2xl glass border border-slate-700">
         <h2 class="text-lg font-semibold mb-3">Process List</h2>
 
@@ -103,6 +101,11 @@
           </thead>
           <tbody id="processTableBody" class="divide-y divide-slate-700"></tbody>
         </table>
+      </div>
+
+      <div class="p-4 rounded-2xl glass border border-slate-700">
+        <h2 class="text-lg font-semibold mb-2">Schedule Output</h2>
+        <pre id="output" class="text-sm text-slate-300"></pre>
       </div>
 
     </section>
@@ -125,6 +128,8 @@
   const processTableBody = document.getElementById("processTableBody");
   const algoButtons = document.querySelectorAll(".algo-btn");
   const selectedAlgoLabel = document.getElementById("selectedAlgoLabel");
+  const runBtn = document.getElementById("runBtn");
+  const output = document.getElementById("output");
 
   function renderProcessTable() {
     processTableBody.innerHTML = "";
@@ -145,11 +150,6 @@
     const burst = parseInt(burstInput.value);
     const priority = parseInt(priorityInput.value);
 
-    if (isNaN(arrival) || isNaN(burst) || isNaN(priority)) {
-      alert("Please enter valid process details");
-      return;
-    }
-
     let pid = pidInput.value.trim();
     if (!pid) pid = "P" + autoPid++;
 
@@ -167,6 +167,7 @@
     processes = [];
     autoPid = 1;
     renderProcessTable();
+    output.textContent = "";
   });
 
   algoButtons.forEach(btn => {
@@ -177,17 +178,64 @@
       btn.classList.remove("bg-slate-800","text-slate-100");
       btn.classList.add("bg-cyan-500","text-slate-900");
 
-      selectedAlgo = btn.getAttribute("data-algo");
-
-      const labelMap = {
-        fcfs: "FCFS selected",
-        sjf: "SJF selected",
-        rr: "Round Robin selected",
-        priority: "Priority selected"
-      };
-
-      selectedAlgoLabel.textContent = labelMap[selectedAlgo];
+      selectedAlgo = btn.dataset.algo;
+      selectedAlgoLabel.textContent = selectedAlgo.toUpperCase() + " selected";
     });
+  });
+
+  // FCFS Algorithm
+  function fcfsAlgo(procs) {
+    const sorted = [...procs].sort((a, b) => a.arrival - b.arrival);
+    let time = 0;
+    let result = "";
+
+    sorted.forEach(p => {
+      if (time < p.arrival) time = p.arrival;
+      result += `${p.pid}: ${time} -> ${time + p.burst}\n`;
+      time += p.burst;
+    });
+
+    return result;
+  }
+
+  // SJF (Non-preemptive)
+  function sjfAlgo(procs) {
+    let time = 0;
+    let completed = [];
+    let result = "";
+
+    while (completed.length < procs.length) {
+      const available = procs.filter(
+        p => p.arrival <= time && !completed.includes(p)
+      );
+
+      if (available.length === 0) {
+        time++;
+        continue;
+      }
+
+      available.sort((a, b) => a.burst - b.burst);
+      const p = available[0];
+
+      result += `${p.pid}: ${time} -> ${time + p.burst}\n`;
+      time += p.burst;
+      completed.push(p);
+    }
+
+    return result;
+  }
+
+  runBtn.addEventListener("click", () => {
+    if (!selectedAlgo || processes.length === 0) {
+      alert("Select algorithm and add processes first");
+      return;
+    }
+
+    if (selectedAlgo === "fcfs") {
+      output.textContent = fcfsAlgo(processes);
+    } else if (selectedAlgo === "sjf") {
+      output.textContent = sjfAlgo(processes);
+    }
   });
 </script>
 
