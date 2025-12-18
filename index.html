@@ -34,6 +34,7 @@
     <!-- Left Panel -->
     <section class="lg:col-span-1 space-y-6">
 
+      <!-- Add Process -->
       <div class="p-4 rounded-2xl glass border border-slate-700">
         <h2 class="text-lg font-semibold mb-4">Add Process</h2>
 
@@ -70,7 +71,12 @@
         <div class="grid grid-cols-2 gap-2">
           <button data-algo="fcfs" class="algo-btn px-3 py-2 rounded-md bg-slate-800">FCFS</button>
           <button data-algo="sjf" class="algo-btn px-3 py-2 rounded-md bg-slate-800">SJF</button>
+          <button data-algo="priority" class="algo-btn px-3 py-2 rounded-md bg-slate-800">Priority</button>
+          <button data-algo="rr" class="algo-btn px-3 py-2 rounded-md bg-slate-800">Round Robin</button>
         </div>
+
+        <input id="quantum" type="number" placeholder="Time Quantum (RR)"
+          class="mt-3 w-full px-3 py-2 rounded-lg bg-transparent border border-slate-700" />
 
         <p id="selectedAlgoLabel" class="text-xs text-slate-400 mt-3">
           No algorithm selected
@@ -123,6 +129,7 @@
   const arrivalInput = document.getElementById("arrival");
   const burstInput = document.getElementById("burst");
   const priorityInput = document.getElementById("priority");
+  const quantumInput = document.getElementById("quantum");
   const addProcessBtn = document.getElementById("addProcessBtn");
   const clearProcessBtn = document.getElementById("clearProcessBtn");
   const processTableBody = document.getElementById("processTableBody");
@@ -146,14 +153,15 @@
   }
 
   addProcessBtn.addEventListener("click", () => {
-    const arrival = parseInt(arrivalInput.value);
-    const burst = parseInt(burstInput.value);
-    const priority = parseInt(priorityInput.value);
-
     let pid = pidInput.value.trim();
     if (!pid) pid = "P" + autoPid++;
 
-    processes.push({ pid, arrival, burst, priority });
+    processes.push({
+      pid,
+      arrival: parseInt(arrivalInput.value),
+      burst: parseInt(burstInput.value),
+      priority: parseInt(priorityInput.value)
+    });
 
     pidInput.value = "";
     arrivalInput.value = "";
@@ -174,67 +182,67 @@
     btn.addEventListener("click", () => {
       algoButtons.forEach(b => b.classList.remove("bg-cyan-500","text-slate-900"));
       algoButtons.forEach(b => b.classList.add("bg-slate-800","text-slate-100"));
-
       btn.classList.remove("bg-slate-800","text-slate-100");
       btn.classList.add("bg-cyan-500","text-slate-900");
-
       selectedAlgo = btn.dataset.algo;
       selectedAlgoLabel.textContent = selectedAlgo.toUpperCase() + " selected";
     });
   });
 
-  // FCFS Algorithm
-  function fcfsAlgo(procs) {
-    const sorted = [...procs].sort((a, b) => a.arrival - b.arrival);
-    let time = 0;
-    let result = "";
-
-    sorted.forEach(p => {
-      if (time < p.arrival) time = p.arrival;
-      result += `${p.pid}: ${time} -> ${time + p.burst}\n`;
-      time += p.burst;
-    });
-
-    return result;
-  }
-
-  // SJF (Non-preemptive)
-  function sjfAlgo(procs) {
-    let time = 0;
-    let completed = [];
-    let result = "";
-
+  function priorityAlgo(procs) {
+    let time = 0, completed = [], result = "";
     while (completed.length < procs.length) {
-      const available = procs.filter(
-        p => p.arrival <= time && !completed.includes(p)
-      );
-
-      if (available.length === 0) {
-        time++;
-        continue;
-      }
-
-      available.sort((a, b) => a.burst - b.burst);
-      const p = available[0];
-
+      let available = procs.filter(p => p.arrival <= time && !completed.includes(p));
+      if (available.length === 0) { time++; continue; }
+      available.sort((a,b) => a.priority - b.priority);
+      let p = available[0];
       result += `${p.pid}: ${time} -> ${time + p.burst}\n`;
       time += p.burst;
       completed.push(p);
     }
+    return result;
+  }
 
+  function rrAlgo(procs, quantum) {
+    let queue = [];
+    let time = 0;
+    let remaining = {};
+    let result = "";
+
+    procs.forEach(p => remaining[p.pid] = p.burst);
+    let sorted = [...procs].sort((a,b) => a.arrival - b.arrival);
+    let i = 0;
+
+    while (queue.length > 0 || i < sorted.length) {
+      while (i < sorted.length && sorted[i].arrival <= time) {
+        queue.push(sorted[i++]);
+      }
+      if (queue.length === 0) { time++; continue; }
+
+      let p = queue.shift();
+      let exec = Math.min(quantum, remaining[p.pid]);
+      result += `${p.pid}: ${time} -> ${time + exec}\n`;
+      time += exec;
+      remaining[p.pid] -= exec;
+
+      while (i < sorted.length && sorted[i].arrival <= time) {
+        queue.push(sorted[i++]);
+      }
+      if (remaining[p.pid] > 0) queue.push(p);
+    }
     return result;
   }
 
   runBtn.addEventListener("click", () => {
-    if (!selectedAlgo || processes.length === 0) {
-      alert("Select algorithm and add processes first");
-      return;
-    }
+    if (!selectedAlgo) return alert("Select an algorithm");
+    if (processes.length === 0) return alert("Add processes first");
 
-    if (selectedAlgo === "fcfs") {
-      output.textContent = fcfsAlgo(processes);
-    } else if (selectedAlgo === "sjf") {
-      output.textContent = sjfAlgo(processes);
+    if (selectedAlgo === "priority") {
+      output.textContent = priorityAlgo(processes);
+    } else if (selectedAlgo === "rr") {
+      const q = parseInt(quantumInput.value);
+      if (!q || q <= 0) return alert("Enter valid time quantum");
+      output.textContent = rrAlgo(processes, q);
     }
   });
 </script>
