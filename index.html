@@ -1,209 +1,443 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intelligent CPU Scheduler Simulator</title>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Intelligent CPU Scheduler Simulator </title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-    body { font-family: Inter, system-ui; }
-    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(6px); }
-    .gantt-bar {
-      background: linear-gradient(90deg,#22d3ee,#34d399);
-      color: #020617;
-      font-weight: 600;
-      text-align: center;
-      border-right: 1px solid #02061755;
-    }
+    :root{--glass: rgba(255,255,255,0.04)}
+    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial}
+    .glass{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter: blur(6px)}
+    .seg-hover:hover{transform:translateY(-4px) scale(1.01)}
+    #ganttContainer::-webkit-scrollbar{height:8px}
+    #ganttContainer::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:8px}
   </style>
 </head>
+<body class="min-h-screen bg-gradient-to-br from-[#071013] via-[#0b1720] to-[#071013] text-slate-100 antialiased p-6">
+  <div class="max-w-7xl mx-auto">
+    <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-3xl bg-gradient-to-br from-cyan-400 to-emerald-400 shadow-xl flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-slate-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v4m0 0v4m0-4h18M3 11h18M12 3v18" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-extrabold leading-tight">Intelligent CPU Scheduler Simulator</h1>
+          <p class="text-slate-300 mt-1 text-sm">FCFS · SJF · Round Robin · Priority — interactive Gantt, metrics & export</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-right hidden sm:block">
+          <div class="text-xs text-slate-400">Developed by</div>
+          <div class="text-sm font-semibold">Dipak-Abhishek-Sudhanshu</div>
+        </div>
+        <div class="flex gap-2">
+          <button id="presetBtn" class="px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700 text-slate-200 hover:bg-slate-700/50">Load Preset</button>
+          <button id="exportCsvBtn" class="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-900 font-semibold hover:brightness-105">Export CSV</button>
+          <button id="exportPngBtn" class="px-3 py-2 rounded-lg bg-amber-400 text-slate-900 font-semibold hover:brightness-105">Export Gantt PNG</button>
+        </div>
+      </div>
+    </header>
 
-<body class="min-h-screen bg-gradient-to-br from-[#071013] via-[#0b1720] to-[#071013] text-slate-100 p-6">
+    <main class="grid lg:grid-cols-3 gap-6">
+      <section class="lg:col-span-1 space-y-5">
+        <div class="p-4 rounded-2xl glass border border-slate-700 shadow-lg">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold">Add Process</h2>
+            <span class="text-xs text-slate-400">quick input</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="col-span-2">
+              <label class="block text-slate-300 mb-1">Process ID</label>
+              <input id="pid" type="text" placeholder="e.g. P1 (auto)" class="w-full rounded-lg px-3 py-2 bg-transparent border border-slate-700 text-slate-100 focus:ring-2 focus:ring-cyan-400 outline-none" />
+            </div>
+            <div>
+              <label class="block text-slate-300 mb-1">Arrival Time</label>
+              <input id="arrival" type="number" min="0" value="0" class="w-full rounded-lg px-3 py-2 bg-transparent border border-slate-700 text-slate-100 focus:ring-2 focus:ring-cyan-400 outline-none" />
+            </div>
+            <div>
+              <label class="block text-slate-300 mb-1">Burst Time</label>
+              <input id="burst" type="number" min="1" value="5" class="w-full rounded-lg px-3 py-2 bg-transparent border border-slate-700 text-slate-100 focus:ring-2 focus:ring-cyan-400 outline-none" />
+            </div>
+            <div>
+              <label class="block text-slate-300 mb-1">Priority</label>
+              <input id="priority" type="number" min="1" value="1" class="w-full rounded-lg px-3 py-2 bg-transparent border border-slate-700 text-slate-100 focus:ring-2 focus:ring-cyan-400 outline-none" />
+            </div>
+          </div>
+          <div class="flex gap-3 mt-4">
+            <button id="addProcessBtn" class="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-900 font-semibold transform hover:-translate-y-0.5 transition">Add Process</button>
+            <button id="clearProcessBtn" class="px-3 py-2 rounded-lg border border-slate-700 text-slate-200 hover:bg-slate-700/30">Clear</button>
+          </div>
+        </div>
 
-<div class="max-w-7xl mx-auto">
+        <div class="p-4 rounded-2xl glass border border-slate-700">
+          <h2 class="text-lg font-semibold mb-3">Algorithm</h2>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-algo="fcfs" class="algo-btn px-3 py-2 rounded-md bg-slate-800 hover:bg-cyan-500 hover:text-slate-900">FCFS</button>
+            <button data-algo="sjf" class="algo-btn px-3 py-2 rounded-md bg-slate-800 hover:bg-cyan-500 hover:text-slate-900">SJF</button>
+            <button data-algo="rr" class="algo-btn px-3 py-2 rounded-md bg-slate-800 hover:bg-cyan-500 hover:text-slate-900">Round Robin</button>
+            <button data-algo="priority" class="algo-btn px-3 py-2 rounded-md bg-slate-800 hover:bg-cyan-500 hover:text-slate-900">Priority</button>
+          </div>
+          <div class="mt-3">
+            <label class="block text-slate-300 mb-1">Time Quantum (RR)</label>
+            <input id="quantum" type="number" min="1" value="2" class="w-full rounded-lg px-3 py-2 bg-transparent border border-slate-700 text-slate-100 focus:ring-2 focus:ring-cyan-400 outline-none" />
+          </div>
+          <button id="runBtn" class="mt-4 w-full px-3 py-2 rounded-lg bg-amber-400 text-slate-900 font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition">Run Scheduler</button>
+        </div>
 
-<header class="mb-6">
-  <h1 class="text-3xl font-extrabold">Intelligent CPU Scheduler Simulator</h1>
-  <p class="text-slate-400 text-sm">FCFS · SJF · Priority · Round Robin</p>
-</header>
+        <div class="p-4 rounded-2xl glass border border-slate-700">
+          <h3 class="text-sm text-slate-300">Tips & Legend</h3>
+          <div class="mt-3 text-xs text-slate-300 space-y-2">
+            <div>Priority: smaller number = higher priority</div>
+            <div>Hover a Gantt segment to see start/end/duration</div>
+            <div class="flex items-center gap-2 mt-2">
+              <div class="w-8 h-4 rounded bg-gradient-to-r from-cyan-400 to-cyan-300"></div><div class="text-xs text-slate-300">Process segment</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-<main class="grid lg:grid-cols-3 gap-6">
+      <section class="lg:col-span-2 space-y-5">
+        <div class="p-4 rounded-2xl glass border border-slate-700 shadow-inner">
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h2 class="text-lg font-semibold">Process List</h2>
+              <p class="text-xs text-slate-400 mt-1" id="processCountLabel">0 processes</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-xs text-slate-400" id="selectedAlgoLabel">No algorithm selected</div>
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-md">
+            <table class="w-full table-auto text-sm">
+              <thead class="text-slate-300 text-xs uppercase">
+                <tr>
+                  <th class="px-3 py-2 text-left">PID</th>
+                  <th class="px-3 py-2 text-left">Arrival</th>
+                  <th class="px-3 py-2 text-left">Burst</th>
+                  <th class="px-3 py-2 text-left">Priority</th>
+                </tr>
+              </thead>
+              <tbody id="processTableBody" class="divide-y divide-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
 
-<section class="lg:col-span-1 space-y-6">
+        <div class="p-4 rounded-2xl glass border border-slate-700">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold">Gantt Chart</h2>
+            <div class="text-xs text-slate-400">Hover segments for details · click segment to pin tooltip</div>
+          </div>
+          <div id="ganttContainer" class="w-full min-h-[96px] rounded-lg bg-[#07151a] border border-slate-800 overflow-auto flex items-center transition-all"></div>
+          <div id="ganttTimeline" class="mt-3 text-xs text-slate-300 font-mono"></div>
+        </div>
 
-<div class="p-4 rounded-2xl glass border border-slate-700">
-  <h2 class="font-semibold mb-3">Add Process</h2>
-  <input id="pid" placeholder="PID (optional)" class="w-full mb-2 px-3 py-2 bg-transparent border border-slate-700 rounded">
-  <input id="arrival" placeholder="Arrival Time" type="number" class="w-full mb-2 px-3 py-2 bg-transparent border border-slate-700 rounded">
-  <input id="burst" placeholder="Burst Time" type="number" class="w-full mb-2 px-3 py-2 bg-transparent border border-slate-700 rounded">
-  <input id="priority" placeholder="Priority" type="number" class="w-full mb-2 px-3 py-2 bg-transparent border border-slate-700 rounded">
-
-  <button id="addBtn" class="w-full bg-cyan-400 text-slate-900 py-2 rounded font-semibold">Add Process</button>
-</div>
-
-<div class="p-4 rounded-2xl glass border border-slate-700">
-  <h2 class="font-semibold mb-3">Algorithm</h2>
-
-  <div class="grid grid-cols-2 gap-2 mb-2">
-    <button data-a="fcfs" class="algo bg-slate-800 p-2 rounded">FCFS</button>
-    <button data-a="sjf" class="algo bg-slate-800 p-2 rounded">SJF</button>
-    <button data-a="priority" class="algo bg-slate-800 p-2 rounded">Priority</button>
-    <button data-a="rr" class="algo bg-slate-800 p-2 rounded">Round Robin</button>
+        <div class="p-4 rounded-2xl glass border border-slate-700 grid md:grid-cols-2 gap-4">
+          <div>
+            <h3 class="text-lg font-semibold">Metrics</h3>
+            <div class="mt-3 overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="text-slate-300 text-xs uppercase">
+                  <tr>
+                    <th class="px-3 py-2 text-left">PID</th>
+                    <th class="px-3 py-2 text-left">CT</th>
+                    <th class="px-3 py-2 text-left">TAT</th>
+                    <th class="px-3 py-2 text-left">WT</th>
+                  </tr>
+                </thead>
+                <tbody id="metricsTableBody" class="divide-y divide-slate-700"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="flex flex-col justify-center items-start">
+            <div class="w-full flex items-center justify-between text-sm text-slate-300 mb-2">
+              <div>Average TAT:</div>
+              <div id="avgTat" class="text-2xl font-bold text-emerald-400">-</div>
+            </div>
+            <div class="w-full flex items-center justify-between text-sm text-slate-300 mb-2">
+              <div>Average WT:</div>
+              <div id="avgWt" class="text-2xl font-bold text-amber-400">-</div>
+            </div>
+            <div class="mt-4 text-xs text-slate-400">Use presets to quickly compare algorithms. Export CSV for reports.</div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <input id="quantum" placeholder="Time Quantum (RR)" type="number"
-    class="w-full px-3 py-2 bg-transparent border border-slate-700 rounded mb-2">
+  <div id="tooltip" class="pointer-events-none fixed z-50 hidden rounded-md px-3 py-2 text-xs bg-slate-900/95 border border-slate-700 text-slate-100 shadow-2xl"></div>
 
-  <button id="runBtn" class="w-full bg-amber-400 text-slate-900 py-2 rounded font-semibold">
-    Run Scheduler
-  </button>
-</div>
+  <script>
+    let processes = [];
+    let selectedAlgo = null;
+    let autoPidCounter = 1;
+    const pidInput = document.getElementById("pid");
+    const arrivalInput = document.getElementById("arrival");
+    const burstInput = document.getElementById("burst");
+    const priorityInput = document.getElementById("priority");
+    const quantumInput = document.getElementById("quantum");
+    const addProcessBtn = document.getElementById("addProcessBtn");
+    const clearProcessBtn = document.getElementById("clearProcessBtn");
+    const processTableBody = document.getElementById("processTableBody");
+    const processCountLabel = document.getElementById("processCountLabel");
+    const algoButtons = document.querySelectorAll(".algo-btn");
+    const selectedAlgoLabel = document.getElementById("selectedAlgoLabel");
+    const runBtn = document.getElementById("runBtn");
+    const ganttContainer = document.getElementById("ganttContainer");
+    const ganttTimeline = document.getElementById("ganttTimeline");
+    const metricsTableBody = document.getElementById("metricsTableBody");
+    const avgTatSpan = document.getElementById("avgTat");
+    const avgWtSpan = document.getElementById("avgWt");
+    const tooltip = document.getElementById("tooltip");
+    const presetBtn = document.getElementById("presetBtn");
+    const exportCsvBtn = document.getElementById("exportCsvBtn");
+    const exportPngBtn = document.getElementById("exportPngBtn");
 
-</section>
+    function renderProcessTable() {
+      processTableBody.innerHTML = "";
+      if (processes.length === 0) {
+        processCountLabel.textContent = "0 processes";
+        return;
+      }
+      processes.forEach(p => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-800/60";
+        tr.innerHTML = `
+          <td class="px-3 py-2">${p.pid}</td>
+          <td class="px-3 py-2">${p.arrival}</td>
+          <td class="px-3 py-2">${p.burst}</td>
+          <td class="px-3 py-2">${p.priority}</td>
+        `;
+        processTableBody.appendChild(tr);
+      });
+      processCountLabel.textContent = `${processes.length} process(s)`;
+    }
 
-<section class="lg:col-span-2 space-y-6">
+    function resetResults() {
+      ganttContainer.innerHTML = '<div class="w-full text-center text-slate-500 py-6">No schedule yet. Add processes and run.</div>';
+      ganttTimeline.textContent = "";
+      metricsTableBody.innerHTML = "";
+      avgTatSpan.textContent = "-";
+      avgWtSpan.textContent = "-";
+    }
 
-<div class="p-4 rounded-2xl glass border border-slate-700">
-  <h2 class="font-semibold mb-2">Gantt Chart</h2>
-  <div id="gantt" class="flex h-14 border border-slate-800 overflow-x-auto"></div>
-</div>
+    addProcessBtn.addEventListener("click", () => {
+      const arrival = parseInt(arrivalInput.value);
+      const burst = parseInt(burstInput.value);
+      const priority = parseInt(priorityInput.value);
+      if (isNaN(arrival) || isNaN(burst) || isNaN(priority) || burst <= 0 || arrival < 0) {
+        alert("Please enter valid Arrival, Burst and Priority values.");
+        return;
+      }
+      let pid = pidInput.value.trim();
+      if (!pid) pid = "P" + autoPidCounter++;
+      processes.push({ pid, arrival, burst, priority });
+      pidInput.value = ""; arrivalInput.value = ""; burstInput.value = ""; priorityInput.value = "";
+      renderProcessTable(); resetResults();
+    });
 
-<div class="p-4 rounded-2xl glass border border-slate-700">
-  <h2 class="font-semibold mb-2">Metrics</h2>
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="text-slate-300">
-        <th>PID</th><th>CT</th><th>TAT</th><th>WT</th>
-      </tr>
-    </thead>
-    <tbody id="metrics"></tbody>
-  </table>
+    clearProcessBtn.addEventListener("click", () => {
+      processes = []; autoPidCounter = 1; renderProcessTable(); resetResults();
+    });
 
-  <div class="mt-3 text-sm text-slate-300">
-    Avg TAT: <span id="avgTat">-</span> |
-    Avg WT: <span id="avgWt">-</span>
-  </div>
-</div>
+    algoButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        algoButtons.forEach(b => b.classList.remove("bg-cyan-500","text-slate-900"));
+        algoButtons.forEach(b => b.classList.add("bg-slate-800","text-slate-100"));
+        btn.classList.remove("bg-slate-800","text-slate-100");
+        btn.classList.add("bg-cyan-500","text-slate-900");
+        selectedAlgo = btn.getAttribute("data-algo");
+        const labelMap = { fcfs: "FCFS", sjf: "SJF (Non-preemptive)", rr: "Round Robin", priority: "Priority" };
+        selectedAlgoLabel.textContent = labelMap[selectedAlgo] || "No algorithm selected";
+        resetResults();
+      });
+    });
 
-</section>
-</main>
-</div>
+    function fcfsAlgo(procs) {
+      const sorted = [...procs].sort((a,b) => a.arrival===b.arrival? a.pid.localeCompare(b.pid): a.arrival-b.arrival);
+      let time=0; const schedule=[];
+      sorted.forEach(p => {
+        if (time<p.arrival) time=p.arrival;
+        const start=time, end=time+p.burst;
+        schedule.push({ pid:p.pid, start, end });
+        time=end;
+      });
+      return schedule;
+    }
 
-<script>
-let processes = [], algo = null, pidc = 1;
+    function sjfAlgo(procs) {
+      const arr=[...procs].sort((a,b)=> a.arrival===b.arrival? a.pid.localeCompare(b.pid): a.arrival-b.arrival);
+      const n=arr.length; const done=Array(n).fill(false); let completed=0; let time=0; const schedule=[];
+      while (completed<n) {
+        let idx=-1, minBT=Infinity;
+        for (let i=0;i<n;i++) if (!done[i] && arr[i].arrival<=time) if (arr[i].burst<minBT) { minBT=arr[i].burst; idx=i; }
+        if (idx===-1) { time++; continue; }
+        const p=arr[idx], start=time, end=time+p.burst;
+        schedule.push({ pid:p.pid, start, end }); time=end; done[idx]=true; completed++;
+      }
+      return schedule;
+    }
 
-document.querySelectorAll(".algo").forEach(b=>{
-  b.onclick=()=>{
-    document.querySelectorAll(".algo").forEach(x=>x.classList.remove("bg-cyan-400","text-black"));
-    b.classList.add("bg-cyan-400","text-black");
-    algo=b.dataset.a;
-  };
-});
+    function priorityAlgo(procs) {
+      const arr=[...procs].sort((a,b)=> a.arrival===b.arrival? a.pid.localeCompare(b.pid): a.arrival-b.arrival);
+      const n=arr.length; const done=Array(n).fill(false); let completed=0; let time=0; const schedule=[];
+      while (completed<n) {
+        let idx=-1, bestPr=Infinity;
+        for (let i=0;i<n;i++) if (!done[i] && arr[i].arrival<=time) if (arr[i].priority<bestPr) { bestPr=arr[i].priority; idx=i; }
+        if (idx===-1) { time++; continue; }
+        const p=arr[idx], start=time, end=time+p.burst;
+        schedule.push({ pid:p.pid, start, end }); time=end; done[idx]=true; completed++;
+      }
+      return schedule;
+    }
 
-addBtn.onclick=()=>{
-  let pid = pid.value || "P"+pidc++;
-  processes.push({
-    pid,
-    arrival:+arrival.value,
-    burst:+burst.value,
-    priority:+priority.value
-  });
-};
+    function rrAlgo(procs, quantum) {
+      const arr=[...procs].sort((a,b)=> a.arrival===b.arrival? a.pid.localeCompare(b.pid): a.arrival-b.arrival);
+      const n=arr.length; const remBT={}; arr.forEach(p=> remBT[p.pid]=p.burst);
+      const schedule=[]; const queue=[]; let time=0; let i=0;
+      while (i<n || queue.length>0) {
+        while (i<n && arr[i].arrival<=time) { queue.push(i); i++; }
+        if (queue.length===0) { if (i<n) { time=arr[i].arrival; queue.push(i); i++; } else break; }
+        const idx = queue.shift(); const p=arr[idx]; const execTime=Math.min(quantum, remBT[p.pid]);
+        const start=time, end=time+execTime; schedule.push({ pid:p.pid, start, end });
+        time=end; remBT[p.pid]-=execTime;
+        while (i<n && arr[i].arrival<=time) { queue.push(i); i++; }
+        if (remBT[p.pid]>0) queue.push(idx);
+      }
+      return schedule;
+    }
 
-function fcfs(p){
-  p=[...p].sort((a,b)=>a.arrival-b.arrival);
-  let t=0,s=[];
-  p.forEach(x=>{
-    if(t<x.arrival)t=x.arrival;
-    s.push({pid:x.pid,start:t,end:t+x.burst});
-    t+=x.burst;
-  });
-  return s;
-}
+    function calculateMetrics(procs, schedule) {
+      const ct={}; schedule.forEach(s=> ct[s.pid]=s.end);
+      let totalTAT=0, totalWT=0; const rows=[];
+      procs.forEach(p => {
+        const completion = ct[p.pid] !== undefined ? ct[p.pid] : 0;
+        const tat = completion - p.arrival;
+        const wt = tat - p.burst;
+        totalTAT += tat;
+        totalWT += wt;
+        rows.push({ pid:p.pid, ct:completion, tat, wt });
+      });
+      return { rows, avgTat: (procs.length? totalTAT/procs.length : 0), avgWt: (procs.length? totalWT/procs.length : 0) };
+    }
 
-function sjf(p){
-  let t=0,s=[],done=[];
-  while(done.length<p.length){
-    let a=p.filter(x=>x.arrival<=t&&!done.includes(x));
-    if(a.length==0){t++;continue;}
-    a.sort((a,b)=>a.burst-b.burst);
-    let x=a[0];
-    s.push({pid:x.pid,start:t,end:t+x.burst});
-    t+=x.burst; done.push(x);
-  }
-  return s;
-}
+    function renderGantt(schedule) {
+      if (!schedule || schedule.length===0) { resetResults(); return; }
+      const totalEnd = schedule[schedule.length-1].end || 1;
+      ganttContainer.innerHTML = "";
+      const palette = ["from-cyan-400 to-cyan-300","from-emerald-400 to-emerald-300","from-amber-400 to-amber-300","from-fuchsia-400 to-fuchsia-300","from-sky-400 to-sky-300","from-lime-400 to-lime-300"];
+      schedule.forEach((slot, idx) => {
+        const duration = slot.end - slot.start;
+        const widthPercent = (duration / totalEnd) * 100;
+        const wrapper = document.createElement("div");
+        wrapper.className = "relative flex items-center justify-center h-16 seg-hover";
+        wrapper.style.width = widthPercent + "%";
+        wrapper.style.minWidth = "48px";
+        const grad = document.createElement("div");
+        grad.className = `h-full flex items-center justify-center text-slate-900 font-semibold bg-gradient-to-r ${palette[idx % palette.length]} border-r border-slate-900/30`;
+        grad.textContent = slot.pid;
+        grad.dataset.start = slot.start;
+        grad.dataset.end = slot.end;
+        grad.dataset.duration = duration;
+        grad.addEventListener("mousemove", (e) => {
+          tooltip.style.left = (e.clientX + 14) + "px";
+          tooltip.style.top = (e.clientY + 14) + "px";
+          tooltip.innerHTML = `<div><strong>${slot.pid}</strong></div><div class="text-xs">Start: ${slot.start} · End: ${slot.end}</div><div class="text-xs">Duration: ${duration}</div>`;
+          tooltip.classList.remove("hidden"); tooltip.style.display = "block";
+        });
+        grad.addEventListener("mouseleave", () => { tooltip.classList.add("hidden"); tooltip.style.display = "none"; });
+        grad.addEventListener("click", (e) => {
+          const pinned = document.querySelector(".pinned");
+          if (pinned) { pinned.classList.remove("pinned"); }
+          grad.classList.add("pinned");
+          tooltip.style.left = (e.clientX + 14) + "px";
+          tooltip.style.top = (e.clientY + 14) + "px";
+          tooltip.innerHTML = `<div><strong>${slot.pid}</strong></div><div class="text-xs">Start: ${slot.start} · End: ${slot.end}</div><div class="text-xs">Duration: ${duration}</div>`;
+          tooltip.classList.remove("hidden"); tooltip.style.display = "block";
+        });
+        wrapper.appendChild(grad);
+        ganttContainer.appendChild(wrapper);
+      });
+      let timeline = "";
+      timeline += schedule[0].start + " ";
+      schedule.forEach(s => { timeline += "  " + s.end; });
+      ganttTimeline.textContent = timeline;
+    }
 
-function priorityAlgo(p){
-  let t=0,s=[],done=[];
-  while(done.length<p.length){
-    let a=p.filter(x=>x.arrival<=t&&!done.includes(x));
-    if(a.length==0){t++;continue;}
-    a.sort((a,b)=>a.priority-b.priority);
-    let x=a[0];
-    s.push({pid:x.pid,start:t,end:t+x.burst});
-    t+=x.burst; done.push(x);
-  }
-  return s;
-}
+    function renderMetrics(metrics) {
+      metricsTableBody.innerHTML = "";
+      metrics.rows.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-800/60";
+        tr.innerHTML = `<td class="px-3 py-2">${r.pid}</td><td class="px-3 py-2">${r.ct}</td><td class="px-3 py-2">${r.tat}</td><td class="px-3 py-2">${r.wt}</td>`;
+        metricsTableBody.appendChild(tr);
+      });
+      avgTatSpan.textContent = metrics.avgTat.toFixed(2);
+      avgWtSpan.textContent = metrics.avgWt.toFixed(2);
+    }
 
-function rr(p,q){
-  let t=0,s=[],rem={},q1=[];
-  p.forEach(x=>rem[x.pid]=x.burst);
-  p=[...p].sort((a,b)=>a.arrival-b.arrival);
-  let i=0;
-  while(q1.length||i<p.length){
-    while(i<p.length&&p[i].arrival<=t)q1.push(p[i++]);
-    if(!q1.length){t++;continue;}
-    let x=q1.shift();
-    let e=Math.min(q,rem[x.pid]);
-    s.push({pid:x.pid,start:t,end:t+e});
-    t+=e; rem[x.pid]-=e;
-    while(i<p.length&&p[i].arrival<=t)q1.push(p[i++]);
-    if(rem[x.pid]>0)q1.push(x);
-  }
-  return s;
-}
+    runBtn.addEventListener("click", () => {
+      if (!selectedAlgo) { alert("Please select an algorithm first."); return; }
+      if (processes.length === 0) { alert("Please add at least one process."); return; }
+      const procsCopy = JSON.parse(JSON.stringify(processes));
+      let schedule;
+      if (selectedAlgo === "fcfs") schedule = fcfsAlgo(procsCopy);
+      else if (selectedAlgo === "sjf") schedule = sjfAlgo(procsCopy);
+      else if (selectedAlgo === "priority") schedule = priorityAlgo(procsCopy);
+      else if (selectedAlgo === "rr") {
+        const q = parseInt(quantumInput.value);
+        if (isNaN(q) || q <= 0) { alert("Please enter a valid time quantum for Round Robin."); return; }
+        schedule = rrAlgo(procsCopy, q);
+      }
+      renderGantt(schedule);
+      const metrics = calculateMetrics(procsCopy, schedule);
+      renderMetrics(metrics);
+    });
 
-function draw(schedule){
-  gantt.innerHTML="";
-  let end=schedule.at(-1).end;
-  schedule.forEach(x=>{
-    let d=document.createElement("div");
-    d.className="gantt-bar";
-    d.style.width=((x.end-x.start)/end*100)+"%";
-    d.textContent=x.pid;
-    gantt.appendChild(d);
-  });
-}
+    presetBtn.addEventListener("click", () => {
+      processes = [
+        { pid: "P1", arrival: 0, burst: 5, priority: 2 },
+        { pid: "P2", arrival: 1, burst: 3, priority: 1 },
+        { pid: "P3", arrival: 2, burst: 8, priority: 3 },
+        { pid: "P4", arrival: 3, burst: 6, priority: 2 }
+      ];
+      autoPidCounter = 5;
+      renderProcessTable(); resetResults();
+    });
 
-function metricsCalc(p,s){
-  let ct={},sumT=0,sumW=0;
-  s.forEach(x=>ct[x.pid]=x.end);
-  metrics.innerHTML="";
-  p.forEach(x=>{
-    let tat=ct[x.pid]-x.arrival;
-    let wt=tat-x.burst;
-    sumT+=tat; sumW+=wt;
-    metrics.innerHTML+=`<tr><td>${x.pid}</td><td>${ct[x.pid]}</td><td>${tat}</td><td>${wt}</td></tr>`;
-  });
-  avgTat.textContent=(sumT/p.length).toFixed(2);
-  avgWt.textContent=(sumW/p.length).toFixed(2);
-}
+    exportCsvBtn.addEventListener("click", () => {
+      if (processes.length === 0) { alert("No processes to export."); return; }
+      const headers = ["PID","Arrival","Burst","Priority"];
+      const rows = processes.map(p => [p.pid,p.arrival,p.burst,p.priority]);
+      const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "processes.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
 
-runBtn.onclick=()=>{
-  let s;
-  if(algo=="fcfs")s=fcfs(processes);
-  if(algo=="sjf")s=sjf(processes);
-  if(algo=="priority")s=priorityAlgo(processes);
-  if(algo=="rr")s=rr(processes,+quantum.value);
-  draw(s); metricsCalc(processes,s);
-};
-</script>
+    exportPngBtn.addEventListener("click", () => {
+      if (!ganttContainer || ganttContainer.children.length === 0) { alert("No Gantt to export."); return; }
+      html2canvas(ganttContainer, {backgroundColor: null, scale: 2}).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "gantt.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+    });
 
+    renderProcessTable();
+    resetResults();
+  </script>
 </body>
 </html>
